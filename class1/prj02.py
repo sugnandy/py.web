@@ -11,7 +11,7 @@ def hi_fun():
 
 
 def clear_fun():
-    # 清除標籤上的內容
+
     # 清除標籤上的內容，並將標籤前景/背景設為與主視窗相同，讓標籤看起來「透明」
     display.config(text="", fg=windows.cget("bg"), bg=windows.cget("bg"))
 
