@@ -2,19 +2,15 @@
 from ttkbootstrap import *
 import os
 import sys
+from PIL import Image, ImageTk
 
 #######################設定工作目錄####################
 # 設定工作目錄
 os.chdir(sys.path[0])
-#######################定義函數########################
+
 #######################建立視窗########################
 # 建立視窗
 window = Tk()
 
 # 設定視窗名稱
-window.title("Checkbutton")
-
-
-#######################設定自型########################
-font_size = 20
-window.option_add("*font", ("Helvetica", font_size))
+window.title("Label Image")
