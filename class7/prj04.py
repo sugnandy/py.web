@@ -42,7 +42,7 @@ def get_weather():
     img = img.resize((80, 80))
 
     photo = ImageTk.PhotoImage(img)
-    icon_label.config(img=photo, text="")
+    icon_label.config(img=photo, text="weather icon")
     icon_label.image = photo
 
 
