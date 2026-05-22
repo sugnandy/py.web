@@ -1,4 +1,1 @@
-#######################匯入模組#######################
-import requests
-import os
-import sys
+438939987c4337b28d9ce90965cc4c3c
