@@ -6,7 +6,11 @@
 import asyncio
 import discord  # pip install -U discord.py；這個套件負責和 Discord 溝通
 import os  # 用來讀取環境變數
+import requests  # 用來向天氣網站送出請求，並接住回傳的資料
 from dotenv import load_dotenv  # pip install -U python-dotenv；把 .env 裡的設定讀進程式
+from myfunction.myfunction import (
+    WeatherAPI,
+)  # pip install -U requests；把 requests 包匯入程式
 
 #######################初始化#######################
 load_dotenv()  # 讀取 .env 檔，讓程式可以拿到 DC_BOT_TOKEN 這類設定資料
@@ -28,6 +32,8 @@ bot = discord.Client(intents=intents)  # 建立機器人本體，並把 intents 
 tree = discord.app_commands.CommandTree(
     bot
 )  # 建立 slash 指令管理器，專門管理像 /hello 這種指令
+
+weather_api = WeatherAPI(os.getenv("WEATHER_API_KEY"))
 
 
 #######################事件#######################
