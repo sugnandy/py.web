@@ -58,6 +58,31 @@ def build_weather_embed(weather_summary):
     return embed
 
 
+def build_forecast_embed(forecast_summary):
+    """把整理好的預報摘要排成 Discord 卡片。"""
+    # weather_summary 已經是整理好的資料，
+    # 所以這個函式只要專心處理卡片外觀，不用再拆 API 原始資料。
+    embeds = []
+
+    for forecast in forecast_summary:
+        embed = discord.Embed(
+            title=f"{forecast['city_name']} 的當前天氣 -{forecast['datetime']}",
+            description=f"描述：{forecast['description']}",
+            color=discord.Colour.from_str("#1E90FF"),
+        )
+        icon_url = weather_api.get_icon_url(forecast["icon_code"])
+        embed.set_thumbnail(url=icon_url)
+
+        embed.add_field(
+            name="溫度",
+            value=f"{forecast['temperature_celsius']}°C",
+            inline=False,  # inline=False 代表這筆資料單獨一行顯示
+        )
+        embeds.append(embed)
+
+    return embeds
+
+
 #######################事件#######################
 # @bot.event 這種寫法叫裝飾器，可以把它想成幫下面的函式貼上一張「事件處理員」標籤。
 # def 是一般函式，通常會照順序一路做完。
@@ -102,7 +127,7 @@ async def hello(interaction: discord.Interaction):
 # /weather 的重點是：
 # 把「查資料」交給 WeatherAPI，把「回應使用者」留在 Bot 主程式處理。
 @tree.command(name="weather", description="取得當前天氣資訊")
-async def weather(interaction: discord.Interaction, city: str):
+async def weather(interaction: discord.Interaction, city: str, forecast: bool = False):
     """輸入 /weather 並提供城市名稱，會回傳當前天氣資訊。"""
     # defer() 會先告訴 Discord「機器人正在處理中」，
     # 這樣查天氣需要一點時間時，指令就不會因為等太久而失敗。
@@ -118,9 +143,18 @@ async def weather(interaction: discord.Interaction, city: str):
         return
 
     try:
-        # 向 WeatherAPI 拿整理好的天氣摘要，
-        # 主程式只要處理結果，不用自己拆很多層字典。
-        weather_summary = weather_api.get_weather_summary(city)
+        if not forecast:
+            # 向 WeatherAPI 拿整理好的天氣摘要，
+            # 主程式只要處理結果，不用自己拆很多層字典。
+            weather_summary = weather_api.get_weather_summary(city)
+            if weather_summary is None:
+                await interaction.followup.send(f"找不到 **{city}** 的天氣資訊。")
+                return
+
+            embed = build_weather_embed(weather_summary)  # 先把整理好的資料排成卡片
+            await interaction.followup.send(embed=embed)
+            return
+
     except (requests.RequestException, ValueError):
         # 如果查詢途中發生網路錯誤或資料格式問題，就回傳通用錯誤訊息
         await interaction.followup.send("目前無法取得天氣資料，請稍後再試。")
@@ -131,10 +165,7 @@ async def weather(interaction: discord.Interaction, city: str):
         await interaction.followup.send(f"找不到 **{city}** 的天氣資訊。")
         return
 
-    embed = build_weather_embed(weather_summary)  # 先把整理好的資料排成卡片
-    await interaction.followup.send(
-        embed=embed
-    )  # defer() 之後，要用 followup.send() 送出正式結果
+    # defer() 之後，要用 followup.send() 送出正式結果
 
 
 #######################啟動#######################
