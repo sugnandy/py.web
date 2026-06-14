@@ -35,6 +35,25 @@ tree = discord.app_commands.CommandTree(
 weather_api = WeatherAPI(os.getenv("WEATHER_API_KEY"))  # 建立 WeatherAPI 實例
 ai_assistant = AIAssistant(os.getenv("OPENAI_API_KEY"))  # 建立 OpenAI API 實例
 
+CHANNEL_HISTORY_LIMIT = 20
+
+# 這裡的 build_weather_embed() 是把整理好的天氣摘要排成 Discord 卡片的函式，
+# 可以把原始資料傳進來，並在回覆時整理出原始資料。
+
+# system_prompt 像是給 AI 的角色卡，會影響 AI 回覆的語氣和工作方式。
+CHAT_SYSTEM_PROMPT = """
+你是一個在 Discord 群組頻道中協助大家的 AI 助手。
+請根據頻道歷史判斷大家正在討論什麼，再回答最新提到你的問題。
+回覆請使用繁體中文，語氣自然、簡短、適合國小學生閱讀。
+如果頻道歷史不足以判斷答案，請說明你還需要哪一個資訊。
+如果需要提到特定使用者或其他 bot，請複製歷史訊息裡的 mention：<@使用者ID>。
+使用 mention 時，請直接放在一般文字中，不要寫成 @名字，也不要加反斜線、反引號或程式碼區塊。
+不要使用 @everyone、@here 或角色標記，也不要自己編造 mention ID。
+"""
+
+AI_REPLY_ALLOWED_MENTIONS = discord.AllowedMentions(
+    everyone=False, roles=False, users=True, replied_user=True
+)
 
 def build_weather_embed(weather_summary):
     """把整理好的天氣摘要排成 Discord 卡片。"""
@@ -82,6 +101,32 @@ def build_forecast_embeds(forecast_summary):
 
     return embeds
 
+
+async def get_channel_history(channel, bot_user, limit=15, before=None):
+    """取得頻道歷史訊息，預設最多 15 筆，可以指定 before 參數往前查更久的歷史。"""
+    old_messages = []   
+    history_messages = []
+    # 這裡的 async for 是因為 channel.history() 回傳的是一個非同步的資料流（async iterator），
+    # 需要用 async for 來逐筆讀取裡面的訊息。
+    async for old_message in channel.history(limit=limit, before=before, oldest_first=False):
+        old_messages.append(old_message)
+
+    # 把讀到的歷史訊息從最舊到最新排序，然後轉成 OpenAI API 需要的格式。
+    for old_message in reversed(old_messages):
+        content = old_message.content.strip()
+        if not content:  # 如果訊息內容不為空，才加入歷史訊息
+            continue
+
+        if old_message.author.id == bot_user.id:
+            history_messages.append({"role": "assistant", "content": content})
+        else:
+            speaker_type = "機器人" if old_message.author.bot else "使用者"
+            speaker_mention = old_message.author.mention  # 直接使用 mention 格式，讓 AI 可以在回覆時複製貼上
+            user_content = (
+                f"{old_message.author.display_name}"
+                f"（{speaker_type}，mention：{speaker_mention} 說：{content}"
+            )
+            
 
 #######################事件#######################
 # @bot.event 這種寫法叫裝飾器，可以把它想成幫下面的函式貼上一張「事件處理員」標籤。
