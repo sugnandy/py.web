@@ -102,17 +102,27 @@ class AIAssistant:
         self.api_key = api_key
         openai.api_key = api_key
 
-    def ask (self, system_prompt, user_message, temperature=0.2, model="gpt-4o"):
-        # ask() 負責把對 AI 的提問和回覆整理成一段文字。
-        # 這樣如果主程式只想顯示文字，就不用順便做 OpenAI 的 API 呼叫。
+    def ask (self, system_prompt, user_message, history_messages=None, temperature=0.2, model="gpt-4o"):
+        # ask() 負責把對 AI 的提問和回覆整理成一段文字。可以把原始資料傳進來，並在回覆時整理出原始資料。
+
+
         if not self.api_key:
             return None,"尚未設定 OpenAI API 金鑰，請先在 .env 檔案中完成設定。"
         
+        if history_messages is None:
+            history_messages = []
+
         # 這裡的 system_prompt 和 user_prompt 是對 AI 的提問內容，主程式可以自由組合。
         messages = (
             [{"role": "system", "content": system_prompt}]
+            +history_messages
             +[{"role": "user", "content": user_message}]
         )
+
+        print("=== 傳給 OpenAI 的訊息===")
+        for msg in messages:
+            print(f"{msg['role']}: {msg['content']}")
+        print("===============================")
 
         try:
             response = openai.chat.completions.create(
