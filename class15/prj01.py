@@ -35,7 +35,10 @@ tree = discord.app_commands.CommandTree(
 weather_api = WeatherAPI(os.getenv("WEATHER_API_KEY"))  # 建立 WeatherAPI 實例
 ai_assistant = AIAssistant(os.getenv("OPENAI_API_KEY"))  # 建立 OpenAI API 實例
 
-CHANNEL_HISTORY_LIMIT = 20
+CHANNEL_HISTORY_LIMIT = 15
+
+OPENAI_MODEL = "gpt-5.5"
+OPENAI_TEMPERATURE = 1
 
 # 這裡的 build_weather_embed() 是把整理好的天氣摘要排成 Discord 卡片的函式，
 # 可以把原始資料傳進來，並在回覆時整理出原始資料。
@@ -47,8 +50,9 @@ CHAT_SYSTEM_PROMPT = """
 回覆請使用繁體中文，語氣自然、簡短、適合國小學生閱讀。
 如果頻道歷史不足以判斷答案，請說明你還需要哪一個資訊。
 如果需要提到特定使用者或其他 bot，請複製歷史訊息裡的 mention：<@使用者ID>。
-使用 mention 時，請直接放在一般文字中，不要寫成 @名字，也不要加反斜線、反引號或程式碼區塊。
-可以使用 @everyone、@here 或角色標記，也不要自己編造 mention ID。
+使用 mention 時，請直接放在一般文字中，寫成 @名字，也不要加反斜線、反引號或程式碼區塊。
+每次回覆控制在500字以內，避免Discord訊息過長被截斷。
+不要使用 @everyone、@here 或角色標記，也不要自己編造 mention ID。
 """
 
 AI_REPLY_ALLOWED_MENTIONS = discord.AllowedMentions(
@@ -153,7 +157,8 @@ async def ask_with_discord_history(message):
         system_prompt=CHAT_SYSTEM_PROMPT,
         user_message=user_message,
         history_messages=history_messages,
-        temperature=0.5,
+        temperature=OPENAI_TEMPERATURE,
+        model=OPENAI_MODEL,
     )
 
 #######################事件#######################

@@ -102,7 +102,7 @@ class AIAssistant:
         self.api_key = api_key
         openai.api_key = api_key
 
-    def ask (self, system_prompt, user_message, history_messages=None, temperature=0.2, model="gpt-4o"):
+    def ask (self, system_prompt, user_message, history_messages=None, temperature=1, model="gpt-5.5"):
         # ask() 負責把對 AI 的提問和回覆整理成一段文字。可以把原始資料傳進來，並在回覆時整理出原始資料。
 
 
@@ -113,25 +113,25 @@ class AIAssistant:
             history_messages = []
 
         # 這裡的 system_prompt 和 user_prompt 是對 AI 的提問內容，主程式可以自由組合。
-        messages = (
-            [{"role": "system", "content": system_prompt}]
-            +history_messages
-            +[{"role": "user", "content": user_message}]
-        )
+        input_messages = history_messages + [{"role": "user", "content": user_message}]
+        
 
         print("=== 傳給 OpenAI 的訊息===")
-        for msg in messages:
+        print(f"system: {system_prompt}")
+        for msg in input_messages:
             print(f"{msg['role']}: {msg['content']}")
         print("===============================")
 
         try:
-            response = openai.chat.completions.create(
+            response = openai.responses.create(
                 model=model,
-                messages=messages,
-                temperature=temperature,
+                instructions=system_prompt,
+                input=input_messages,
+                tools=[{"type": "web_search"}],
+                tool_choice="auto",
             )
 
-            assistant_message = response.choices[0].message.content
+            assistant_message = response.output_text
 
             return assistant_message, None
         
